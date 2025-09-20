@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String
+  address   String
+  taxId     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  purchaseInvoices PurchaseInvoice[]
+  products         Product[]
+
+  @@map("suppliers")
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String
+  address   String
+  taxId     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  saleInvoices SaleInvoice[]
+
+  @@map("clients")
+}
+
+model PurchaseInvoice {
+  id           String   @id @default(cuid())
+  invoiceNumber String   @unique
+  supplierId   String
+  date         String
+  dueDate      String
+  status       String   @default("pending")
+  subtotal     Float
+  taxAmount    Float
+  total        Float
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_invoices")
+}
+
+model SaleInvoice {
+  id           String   @id @default(cuid())
+  invoiceNumber String   @unique
+  clientId     String
+  date         String
+  dueDate      String
+  status       String   @default("pending")
+  subtotal     Float
+  taxAmount    Float
+  total        Float
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("sale_invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoiceType String  // "purchase" ou "sale"
+  description String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+  taxRate     Float   @default(0.2)
+  createdAt   DateTime @default(now())
+
+  @@map("invoice_items")
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  description       String   @unique
+  totalQuantity     Int      @default(0)
+  averageUnitPrice  Float    @default(0)
+  lastPurchasePrice Float    @default(0)
+  lastPurchaseDate  String?
+  supplierId        String?
+  supplierName      String?
+  taxRate           Float    @default(0.2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+
+  @@map("products")
+}

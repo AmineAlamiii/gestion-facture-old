@@ -1,0 +1,32 @@
+{
+  "name": "invoice-management-backend",
+  "version": "1.0.0",
+  "description": "Backend API pour l'application de gestion de factures",
+  "main": "src/app-prisma.js",
+  "scripts": {
+    "dev": "nodemon src/app-prisma.js",
+    "start": "node src/app-prisma.js",
+    "build": "echo 'No build needed for JavaScript'",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "keywords": ["invoice", "management", "api", "express", "typescript"],
+  "author": "Votre Nom",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "@prisma/client": "^5.7.1",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "prisma": "^5.7.1",
+    "@types/pg": "^8.10.9"
+  }
+}
