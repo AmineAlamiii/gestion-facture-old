@@ -5,7 +5,6 @@ services:
   - type: web
     name: invoice-management-backend
     env: node
-    plan: free
     region: frankfurt
     buildCommand: cd backend && npm install && npx prisma generate
     startCommand: cd backend && npm start
@@ -29,7 +28,6 @@ services:
   - type: web
     name: invoice-management-frontend
     env: static
-    plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
     # Note: VITE_API_URL doit être configurée manuellement avec l'URL du backend
