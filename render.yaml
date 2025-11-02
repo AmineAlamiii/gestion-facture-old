@@ -1,6 +1,6 @@
 services:
   # Base de données PostgreSQL (GRATUITE - limitée à ~1GB et supprimée après 90 jours d'inactivité)
-  - type: pspg
+  - type: pg
     name: invoice-management-db
     plan: free
     databaseName: invoice_management
