@@ -76,6 +76,7 @@ export interface SaleInvoice {
   taxAmount: number;
   total: number;
   status: 'draft' | 'sent' | 'paid' | 'overdue';
+  paymentMethod?: string;
   notes?: string;
   basedOnPurchase?: string;
   createdAt: string;
@@ -131,6 +132,7 @@ export interface CreateSaleInvoiceRequest {
   dueDate: string;
   items: CreateInvoiceItemRequest[];
   status?: 'draft' | 'sent' | 'paid' | 'overdue';
+  paymentMethod?: string;
   notes?: string;
   basedOnPurchase?: string;
 }

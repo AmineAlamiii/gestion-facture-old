@@ -31,7 +31,13 @@ const ProductStock: React.FC<ProductStockProps> = ({ products, onClose, onPrint 
           </div>
           <div className="flex items-center space-x-3">
             <button
-              onClick={onPrint}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Bouton Imprimer cliqué');
+                onPrint();
+              }}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
             >
               <Printer className="w-4 h-4 mr-2" />

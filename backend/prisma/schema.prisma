@@ -64,18 +64,19 @@ model PurchaseInvoice {
 }
 
 model SaleInvoice {
-  id           String   @id @default(cuid())
+  id            String   @id @default(cuid())
   invoiceNumber String   @unique
-  clientId     String
-  date         String
-  dueDate      String
-  status       String   @default("pending")
-  subtotal     Float
-  taxAmount    Float
-  total        Float
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  clientId      String
+  date          String
+  dueDate       String
+  status        String   @default("pending")
+  subtotal      Float
+  taxAmount     Float
+  total         Float
+  paymentMethod String?  @default("Espèces")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)

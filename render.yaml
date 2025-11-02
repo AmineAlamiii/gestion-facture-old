@@ -1,0 +1,43 @@
+services:
+  # Base de données PostgreSQL (GRATUITE - limitée à ~1GB et supprimée après 90 jours d'inactivité)
+  - type: pspg
+    name: invoice-management-db
+    plan: free
+    databaseName: invoice_management
+    user: invoice_user
+
+  # Service Backend (GRATUIT - mis en veille après 15 min d'inactivité)
+  - type: web
+    name: invoice-management-backend
+    env: node
+    plan: free
+    region: frankfurt
+    buildCommand: cd backend && npm install && npx prisma generate
+    startCommand: cd backend && npm start
+    # Note: Exécutez 'npx prisma migrate deploy' dans le Shell après le premier déploiement
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        fromDatabase:
+          name: invoice-management-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: LOG_LEVEL
+        value: info
+      # Note: FRONTEND_URL doit être ajoutée manuellement après le déploiement du frontend
+
+  # Service Frontend (GRATUIT - Site statique sans limitations)
+  - type: web
+    name: invoice-management-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    # Note: VITE_API_URL doit être configurée manuellement avec l'URL du backend
+

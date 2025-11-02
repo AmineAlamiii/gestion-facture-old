@@ -4,7 +4,7 @@ import { useSuppliers } from '../../hooks/useSuppliers';
 import { useProducts } from '../../hooks/useProducts';
 import PurchaseList from './PurchaseList';
 import PurchaseForm from './PurchaseForm';
-import ProductStock from '../products/ProductStock';
+import ProductStockContainer from '../products/ProductStockContainer';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 
@@ -46,15 +46,47 @@ const PurchaseListContainer: React.FC = () => {
 
   const handleSave = async (purchaseData: any) => {
     try {
+      console.log('📦 Données reçues du formulaire:', purchaseData);
+      console.log('📦 Fournisseur:', purchaseData.supplier);
+      console.log('📦 SupplierId:', purchaseData.supplier?.id || purchaseData.supplierId);
+
+      // Extraire l'ID du fournisseur
+      const supplierId = purchaseData.supplier?.id || purchaseData.supplierId;
+      
+      if (!supplierId) {
+        console.error('❌ Erreur: Aucun ID de fournisseur trouvé!');
+        alert('Erreur: Aucun fournisseur sélectionné. Veuillez sélectionner un fournisseur.');
+        return;
+      }
+
+      // Transformer les données pour correspondre au format attendu par le backend
+      const transformedData = {
+        invoiceNumber: purchaseData.invoiceNumber,
+        supplierId: supplierId,
+        date: purchaseData.date,
+        dueDate: purchaseData.dueDate,
+        status: purchaseData.status,
+        notes: purchaseData.notes || '',
+        items: purchaseData.items.map((item: any) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate
+        }))
+      };
+
+      console.log('✅ Données transformées envoyées au backend:', transformedData);
+
       if (editingPurchase) {
-        await updatePurchaseInvoice(editingPurchase.id, purchaseData);
+        await updatePurchaseInvoice(editingPurchase.id, transformedData);
       } else {
-        await createPurchaseInvoice(purchaseData);
+        await createPurchaseInvoice(transformedData);
       }
       setShowForm(false);
       setEditingPurchase(null);
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      console.error('❌ Erreur lors de la sauvegarde:', error);
+      alert('Erreur lors de la sauvegarde de la facture. Consultez la console pour plus de détails.');
     }
   };
 
@@ -290,10 +322,8 @@ const PurchaseListContainer: React.FC = () => {
 
   if (showProductStock) {
     return (
-      <ProductStock
-        products={products}
+      <ProductStockContainer
         onClose={handleCloseStock}
-        onPrint={() => console.log('Imprimer le stock')}
       />
     );
   }

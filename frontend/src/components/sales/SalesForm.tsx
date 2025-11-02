@@ -26,14 +26,22 @@ const SalesForm: React.FC<SalesFormProps> = ({
     date: sale?.date || new Date().toISOString().split('T')[0],
     dueDate: sale?.dueDate || '',
     status: sale?.status || 'draft' as const,
+    paymentMethod: sale?.paymentMethod || 'Espèces',
     notes: sale?.notes || '',
     items: sale?.items || [] as InvoiceItem[],
   });
 
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState('');
 
   const selectedClient = formData.client;
+
+  // Filtrer les produits selon le terme de recherche
+  const filteredProducts = products.filter(product =>
+    product.description.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+    product.supplierName.toLowerCase().includes(productSearchTerm.toLowerCase())
+  );
 
   const addProductToSale = (product: Product, margin: number = 30) => {
     const marginMultiplier = 1 + (margin / 100);
@@ -87,6 +95,7 @@ const SalesForm: React.FC<SalesFormProps> = ({
       taxAmount,
       total,
       status: formData.status,
+      paymentMethod: formData.paymentMethod,
       notes: formData.notes,
     });
   };
@@ -685,20 +694,40 @@ const SalesForm: React.FC<SalesFormProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Statut
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="draft">Brouillon</option>
-              <option value="sent">Envoyé</option>
-              <option value="paid">Payé</option>
-              <option value="overdue">En retard</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Statut
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="draft">Brouillon</option>
+                <option value="sent">Envoyé</option>
+                <option value="paid">Payé</option>
+                <option value="overdue">En retard</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mode de paiement
+              </label>
+              <select
+                value={formData.paymentMethod}
+                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="Espèces">Espèces</option>
+                <option value="Chèque">Chèque</option>
+                <option value="Virement bancaire">Virement bancaire</option>
+                <option value="Carte bancaire">Carte bancaire</option>
+                <option value="Traite">Traite</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </div>
           </div>
 
           <div>
@@ -738,7 +767,7 @@ const SalesForm: React.FC<SalesFormProps> = ({
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="any"
                         value={item.quantity}
                         onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -753,7 +782,7 @@ const SalesForm: React.FC<SalesFormProps> = ({
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="any"
                         value={item.unitPrice}
                         onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -769,7 +798,7 @@ const SalesForm: React.FC<SalesFormProps> = ({
                         type="number"
                         min="0"
                         max="100"
-                        step="0.01"
+                        step="any"
                         value={item.taxRate}
                         onChange={(e) => updateItem(index, 'taxRate', parseFloat(e.target.value) || 0)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -881,7 +910,10 @@ const SalesForm: React.FC<SalesFormProps> = ({
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800">Sélectionner un produit</h3>
               <button 
-                onClick={() => setShowProductSelector(false)} 
+                onClick={() => {
+                  setShowProductSelector(false);
+                  setProductSearchTerm('');
+                }} 
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="w-5 h-5" />
@@ -889,10 +921,20 @@ const SalesForm: React.FC<SalesFormProps> = ({
             </div>
 
             <div className="p-6">
+              {/* Barre de recherche */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={productSearchTerm}
+                  onChange={(e) => setProductSearchTerm(e.target.value)}
+                  placeholder="Rechercher un produit par nom ou fournisseur..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
 
               <div className="overflow-y-auto max-h-96">
                 <div className="grid gap-4">
-                  {products.map((product) => (
+                  {filteredProducts.map((product) => (
                     <div key={product.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -908,28 +950,25 @@ const SalesForm: React.FC<SalesFormProps> = ({
                         </div>
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => addProductToSale(product, 20)}
-                            className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
-                          >
-                            +20%
-                          </button>
-                          <button
                             onClick={() => addProductToSale(product, 30)}
-                            className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors font-semibold"
                           >
                             +30%
-                          </button>
-                          <button
-                            onClick={() => addProductToSale(product, 50)}
-                            className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition-colors"
-                          >
-                            +50%
                           </button>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {filteredProducts.length === 0 && products.length > 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Aucun produit trouvé</p>
+                    <p className="text-gray-400 text-sm mt-1">
+                      Essayez avec un autre terme de recherche
+                    </p>
+                  </div>
+                )}
 
                 {products.length === 0 && (
                   <div className="text-center py-8">

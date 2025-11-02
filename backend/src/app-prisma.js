@@ -407,20 +407,27 @@ app.get('/api/invoices/purchases/:id', async (req, res) => {
 
 app.post('/api/invoices/purchases', async (req, res) => {
   try {
-    const { invoiceNumber, supplier, date, dueDate, status, items, notes } = req.body;
+    const { invoiceNumber, supplier, supplierId: directSupplierId, date, dueDate, status, items, notes } = req.body;
     
-    // Extraire l'ID du fournisseur
-    const supplierId = typeof supplier === 'object' ? supplier.id : supplier;
-    const supplierName = typeof supplier === 'object' ? supplier.name : null;
+    // Extraire l'ID du fournisseur (accepter plusieurs formats)
+    const supplierId = directSupplierId || (typeof supplier === 'object' ? supplier.id : supplier);
     
     if (!supplierId) {
       res.status(400).json({ success: false, error: 'ID du fournisseur requis' });
       return;
     }
+
+    // Récupérer le fournisseur depuis la base de données pour obtenir son nom
+    const supplierData = await prisma.supplier.findUnique({
+      where: { id: supplierId },
+      select: { name: true }
+    });
     
-    // Calculer les totaux
-    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-    const taxAmount = items.reduce((sum, item) => sum + (item.total * item.taxRate), 0);
+    const supplierName = supplierData?.name || (typeof supplier === 'object' ? supplier.name : null) || 'N/A';
+    
+    // Calculer les totaux à partir de quantity et unitPrice
+    const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const taxAmount = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice * item.taxRate / 100), 0);
     const total = subtotal + taxAmount;
 
     // Créer la facture
@@ -448,7 +455,7 @@ app.post('/api/invoices/purchases', async (req, res) => {
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            total: item.total,
+            total: item.quantity * item.unitPrice,
             taxRate: item.taxRate
           }
         })
@@ -648,19 +655,19 @@ app.get('/api/invoices/sales/:id', async (req, res) => {
 
 app.post('/api/invoices/sales', async (req, res) => {
   try {
-    const { invoiceNumber, client, date, dueDate, status, items, notes } = req.body;
+    const { invoiceNumber, client, clientId: directClientId, date, dueDate, status, paymentMethod, items, notes } = req.body;
     
-    // Extraire l'ID du client
-    const clientId = typeof client === 'object' ? client.id : client;
+    // Extraire l'ID du client (accepter plusieurs formats)
+    const clientId = directClientId || (typeof client === 'object' ? client.id : client);
     
     if (!clientId) {
       res.status(400).json({ success: false, error: 'ID du client requis' });
       return;
     }
     
-    // Calculer les totaux
-    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-    const taxAmount = items.reduce((sum, item) => sum + (item.total * item.taxRate), 0);
+    // Calculer les totaux à partir de quantity et unitPrice
+    const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const taxAmount = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice * item.taxRate / 100), 0);
     const total = subtotal + taxAmount;
 
     // Créer la facture
@@ -674,6 +681,7 @@ app.post('/api/invoices/sales', async (req, res) => {
         subtotal,
         taxAmount,
         total,
+        paymentMethod: paymentMethod || 'Espèces',
         notes
       }
     });
@@ -688,7 +696,7 @@ app.post('/api/invoices/sales', async (req, res) => {
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            total: item.total,
+            total: item.quantity * item.unitPrice,
             taxRate: item.taxRate
           }
         })
@@ -768,10 +776,55 @@ app.get('/api/products', async (req, res) => {
       where: search ? {
         description: { contains: search, mode: 'insensitive' }
       } : {},
+      include: {
+        supplier: true
+      },
       orderBy: { description: 'asc' }
     });
 
-    res.json({ success: true, data: products });
+    // Formater les produits pour inclure supplierName et récupérer l'historique des achats
+    const productsWithPurchases = await Promise.all(
+      products.map(async (product) => {
+        // Récupérer l'historique des achats pour ce produit
+        const invoiceItems = await prisma.invoiceItem.findMany({
+          where: {
+            invoiceType: 'purchase',
+            description: product.description
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+
+        // Pour chaque item, récupérer les informations de la facture d'achat
+        const purchases = await Promise.all(
+          invoiceItems.map(async (item) => {
+            const purchaseInvoice = await prisma.purchaseInvoice.findUnique({
+              where: { id: item.invoiceId },
+              select: {
+                invoiceNumber: true,
+                date: true
+              }
+            });
+
+            return {
+              invoiceId: item.invoiceId,
+              invoiceNumber: purchaseInvoice?.invoiceNumber || '',
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              date: purchaseInvoice?.date || ''
+            };
+          })
+        );
+
+        return {
+          ...product,
+          supplierName: product.supplier?.name || product.supplierName || 'N/A',
+          supplierId: product.supplierId || '',
+          purchases: purchases
+        };
+      })
+    );
+
+    res.json({ success: true, data: productsWithPurchases });
   } catch (error) {
     console.error('Erreur lors de la récupération des produits:', error);
     res.status(500).json({ success: false, error: 'Erreur interne du serveur' });

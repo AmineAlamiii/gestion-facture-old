@@ -45,10 +45,28 @@ const SalesListContainer: React.FC = () => {
 
   const handleSave = async (saleData: any) => {
     try {
+      // Transformer les données pour correspondre au format attendu par le backend
+      const transformedData = {
+        invoiceNumber: saleData.invoiceNumber,
+        clientId: saleData.client?.id || saleData.clientId,
+        date: saleData.date,
+        dueDate: saleData.dueDate,
+        status: saleData.status,
+        paymentMethod: saleData.paymentMethod || 'Espèces',
+        notes: saleData.notes || '',
+        basedOnPurchase: saleData.basedOnPurchase || '',
+        items: saleData.items.map((item: any) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate
+        }))
+      };
+
       if (editingSale) {
-        await updateSaleInvoice(editingSale.id, saleData);
+        await updateSaleInvoice(editingSale.id, transformedData);
       } else {
-        await createSaleInvoice(saleData);
+        await createSaleInvoice(transformedData);
       }
       setShowForm(false);
       setEditingSale(null);
@@ -98,43 +116,43 @@ const SalesListContainer: React.FC = () => {
           <title>Facture de Vente - ${fullSale.invoiceNumber}</title>
           <style>
             body { 
-              font-family: Arial, sans-serif; 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
               margin: 15px; 
-              font-size: 15px;
-              line-height: 1.5;
+              font-size: 16px;
+              line-height: 1.6;
+              color: #2c3e50;
             }
             .content {
               padding-bottom: 140px;
             }
             .header { 
               text-align: center; 
-              margin-bottom: 20px; 
-              border-bottom: 3px solid #333;
-              padding-bottom: 15px;
+              margin-bottom: 35px; 
+              padding-bottom: 25px;
             }
             .company-logo {
               display: flex;
               align-items: center;
               justify-content: center;
-              margin-bottom: 15px;
+              margin-bottom: 20px;
+              gap: 20px;
             }
             .logo-img {
-              max-height: 100px;
-              max-width: 250px;
+              max-height: 180px;
+              max-width: 400px;
               object-fit: contain;
             }
-            .invoice-info { margin-bottom: 20px; }
-            .client-info { margin-bottom: 20px; }
+            .invoice-info { margin-bottom: 25px; font-size: 17px; }
+            .client-info { margin-bottom: 25px; font-size: 17px; }
             .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            .items-table th, .items-table td { border: 2px solid #333; padding: 15px; text-align: left; font-size: 16px; height: 60px; vertical-align: middle; }
-            .items-table th { background-color: #f5f5f5; font-weight: bold; font-size: 16px; text-align: center; }
+            .items-table th, .items-table td { border: 2px solid #333; padding: 15px; text-align: left; font-size: 17px; height: 60px; vertical-align: middle; }
+            .items-table th { background-color: #f8f9fa; font-weight: bold; font-size: 17px; text-align: center; }
             .total { text-align: right; font-weight: bold; margin-bottom: 20px; }
             .status { padding: 4px 8px; border-radius: 4px; }
             .status.pending { background-color: #fef3c7; color: #92400e; }
             .status.paid { background-color: #d1fae5; color: #065f46; }
             .status.overdue { background-color: #fee2e2; color: #991b1b; }
             .footer {
-              border-top: 3px solid #333;
               padding: 15px 15px;
               text-align: center;
               color: #666;
@@ -181,72 +199,75 @@ const SalesListContainer: React.FC = () => {
           <div class="content">
             <div class="main-content">
               <div class="header">
-                <div class="company-logo" style="display: flex; align-items: flex-end; gap: 15px;">
+                <div class="company-logo">
                   <img src="/images/image.png" alt="LYOUSR MÉDICAL" class="logo-img" />
-                  <p style="color:rgb(99, 178, 252); font-weight: bold; font-size: 14px; margin: 0;">SARL AU</p>
+                  <p style="color: #2563eb; font-weight: 600; font-size: 18px; margin: 0; letter-spacing: 1px;">SARL AU</p>
                 </div>
               </div>
               
               <div class="invoice-info" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                 <div>
-                  <p style="font-size: 16px;"><strong>Date:</strong> ${new Date(fullSale.date).toLocaleDateString('fr-FR')}</p>
+                  <p style="font-size: 18px; margin: 5px 0;"><strong style="color: #1e40af;">Date:</strong> <span style="color: #374151;">${new Date(fullSale.date).toLocaleDateString('fr-FR')}</span></p>
                 </div>
                 <div style="text-align: right;">
-                  <p style="font-size: 16px;"><strong>N° Facture:</strong> ${fullSale.invoiceNumber}</p>
+                  <p style="font-size: 18px; margin: 5px 0;"><strong style="color: #1e40af;">N° Facture:</strong> <span style="color: #374151;">${fullSale.invoiceNumber}</span></p>
                 </div>
               </div>
               
-              <div class="client-info" style="margin-bottom: 30px;">
-                <p style="font-size: 16px;"><strong>Client:</strong> ${fullSale.client?.name || 'N/A'}</p>
+              <div class="client-info" style="margin-bottom: 20px; background-color: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb;">
+                <p style="font-size: 18px; margin: 0;"><strong style="color: #1e40af;">Client:</strong> <span style="color: #374151; font-weight: 500;">${fullSale.client?.name || 'N/A'}</span></p>
+              </div>
+
+              <!-- Mode de paiement -->
+              <div style="margin-bottom: 30px; background-color: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                <p style="font-size: 18px; margin: 0;"><strong style="color: #92400e;">Mode de paiement:</strong> <span style="color: #78350f; font-weight: 500;">${fullSale.paymentMethod || 'Espèces'}</span></p>
               </div>
               
-              <div style="position: relative;">
-                <!-- Tableau principal -->
-                <table class="items-table">
-                  <thead>
+              <!-- Tableau principal -->
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50%;">Désignation</th>
+                    <th style="width: 2%;">Quantité</th>
+                    <th style="width: 15%;">Prix U.H.T</th>
+                    <th style="width: 15%;">Total H.T</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${fullSale.items?.map((item: any) => `
                     <tr>
-                      <th style="width: 50%;">Désignation</th>
-                      <th style="width: 2%;">Quantité</th>
-                      <th style="width: 15%;">Prix U.H.T</th>
-                      <th style="width: 15%;">Total H.T</th>
+                      <td>${item.description}</td>
+                      <td style="text-align: right;">${item.quantity.toFixed(2)}</td>
+                      <td style="text-align: right;">${item.unitPrice.toFixed(2)}</td>
+                      <td style="text-align: right;">${item.total.toFixed(2)}</td>
                     </tr>
-                  </thead>
+                  `).join('') || ''}
+                </tbody>
+              </table>
+              
+              <!-- Tableau des totaux séparé, en dessous et à droite -->
+              <div style="display: flex; justify-content: flex-end; margin-top: 25px; margin-bottom: 30px;">
+                <table style="width: 280px; border-collapse: collapse; border: 2px solid #333; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                   <tbody>
-                    ${fullSale.items?.map((item: any) => `
-                      <tr>
-                        <td>${item.description}</td>
-                        <td style="text-align: right;">${item.quantity.toFixed(2)}</td>
-                        <td style="text-align: right;">${item.unitPrice.toFixed(2)}</td>
-                        <td style="text-align: right;">${item.total.toFixed(2)}</td>
-                      </tr>
-                    `).join('') || ''}
+                    <tr>
+                      <td style="padding: 12px 15px; text-align: left; font-weight: bold; border: 2px solid #333; font-size: 16px; background-color: #f8f9fa; color: #1e40af;">Total HT</td>
+                      <td style="padding: 12px 15px; text-align: right; border: 2px solid #333; font-size: 16px; background-color: #fff; font-weight: 600;">${fullSale.subtotal?.toFixed(2) || '0.00'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 15px; text-align: left; font-weight: bold; border: 2px solid #333; font-size: 16px; background-color: #f8f9fa; color: #1e40af;">TVA 20%</td>
+                      <td style="padding: 12px 15px; text-align: right; border: 2px solid #333; font-size: 16px; background-color: #fff; font-weight: 600;">${fullSale.taxAmount?.toFixed(2) || '0.00'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 15px; text-align: left; font-weight: bold; border: 2px solid #333; font-size: 17px; background-color: #2563eb; color: #fff;">Total TTC</td>
+                      <td style="padding: 12px 15px; text-align: right; font-weight: bold; border: 2px solid #333; font-size: 17px; background-color: #2563eb; color: #fff;">${fullSale.total?.toFixed(2) || '0.00'}</td>
+                    </tr>
                   </tbody>
                 </table>
-                
-                <!-- Tableau des totaux collé au premier tableau -->
-                <div style="position: absolute; top: 100%; right: 0; width: 234px;">
-                  <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
-                    <tbody>
-                      <tr>
-                        <td style="padding: 8px; text-align:  left; font-weight: bold; border: 2px solid #000; font-size: 14px; background-color: #fff;">Total HT</td>
-                        <td style="padding: 8px; text-align: right; border: 2px solid #000; font-size: 14px; background-color: #fff;">${fullSale.subtotal?.toFixed(2) || '0.00'}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px; text-align: left; font-weight: bold; border: 2px solid #000; font-size: 14px; background-color: #fff;">TVA 20%</td>
-                        <td style="padding: 8px; text-align: right; border: 2px solid #000; font-size: 14px; background-color: #fff;">${fullSale.taxAmount?.toFixed(2) || '0.00'}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px; text-align: left; font-weight: bold; border: 2px solid #000; font-size: 14px; background-color: #fff;">Total TTC</td>
-                        <td style="padding: 8px; text-align: right; font-weight: bold; border: 2px solid #000; font-size: 14px; background-color: #fff;">${fullSale.total?.toFixed(2) || '0.00'}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                
-                <!-- Texte au bas du tableau des totaux -->
-                <div style="position: absolute; top: 100%; left: 0; margin-top: 200px; font-size: 17px;">
-                  <p><strong>Arrêtée la présente facture à la somme de : ${amountInWords}</strong></p>
-                </div>
+              </div>
+              
+              <!-- Montant en lettres -->
+              <div style="margin-top: 30px; margin-bottom: 30px; font-size: 18px; background-color: #eff6ff; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb;">
+                <p style="margin: 0;"><strong style="color: #1e40af;">Arrêtée la présente facture à la somme de :</strong> <span style="color: #374151; font-weight: 600;">${amountInWords}</span></p>
               </div>
               
               ${fullSale.notes ? `
@@ -258,16 +279,16 @@ const SalesListContainer: React.FC = () => {
             </div>
             
             <footer class="footer">
-              <div style="margin-bottom: 10px; font-weight: bold; color: #2563eb;">
+              <div style="margin-bottom: 12px; font-weight: 600; color: #2563eb; font-size: 15px; letter-spacing: 0.5px;">
                 N°3 LOTISSEMENT MABROUKA RUE MOHAMED VI RESIDENCE MOHAMMED VI FES
               </div>
-              <div style="margin-bottom: 5px;">
+              <div style="margin-bottom: 8px; color: #374151; font-size: 14px; font-weight: 500;">
                 TÉL : 05 32 02 57 39 / 06 94 86 41 49
               </div>
-              <div style="margin-bottom: 5px;">
+              <div style="margin-bottom: 8px; color: #374151; font-size: 14px; font-weight: 500;">
                 E-MAIL : Lyourmodomall.com/www.lyousmucial.co
               </div>
-              <div>
+              <div style="color: #6b7280; font-size: 13px;">
                 RC : 62295 / TP : 14000024 / IF : 45635405 / C.N.SS : 1772459 / ICE : 00222452000023
               </div>
             </footer>

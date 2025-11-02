@@ -71,20 +71,28 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Validation du formulaire:', {
+    console.log('📋 Validation du formulaire:', {
       selectedSupplier,
+      formDataSupplier: formData.supplier,
       itemsLength: formData.items.length,
       formData
     });
     
-    if (!selectedSupplier) {
-      console.error('Aucun fournisseur sélectionné');
+    // Utiliser formData.supplier si selectedSupplier n'est pas défini
+    const supplierToUse = selectedSupplier || formData.supplier;
+    
+    if (!supplierToUse) {
+      console.error('❌ Aucun fournisseur sélectionné');
+      console.error('formData.supplier:', formData.supplier);
+      console.error('selectedSupplier:', selectedSupplier);
       alert('Veuillez sélectionner un fournisseur');
       return;
     }
+
+    console.log('✅ Fournisseur utilisé:', supplierToUse);
     
     if (formData.items.length === 0) {
-      console.error('Aucun article ajouté');
+      console.error('❌ Aucun article ajouté');
       alert('Veuillez ajouter au moins un article');
       return;
     }
@@ -93,9 +101,9 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({
     const subtotal = formData.items.reduce((sum, item) => sum + item.total, 0);
     const taxAmount = formData.items.reduce((sum, item) => sum + (item.total * item.taxRate / 100), 0);
 
-    console.log('Données à sauvegarder:', {
+    console.log('💾 Données à sauvegarder:', {
       invoiceNumber: formData.invoiceNumber,
-      supplier: selectedSupplier,
+      supplier: supplierToUse,
       date: formData.date,
       dueDate: formData.dueDate,
       items: formData.items,
@@ -108,7 +116,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({
 
     onSave({
       invoiceNumber: formData.invoiceNumber,
-      supplier: selectedSupplier,
+      supplier: supplierToUse,
       date: formData.date,
       dueDate: formData.dueDate,
       items: formData.items,
@@ -150,10 +158,15 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({
               options={suppliers}
               value={formData.supplier?.id || ''}
               onChange={(value) => {
+                console.log('🔍 SearchableSelect onChange - valeur reçue:', value);
                 if (value && typeof value === 'object') {
+                  console.log('✅ Fournisseur sélectionné:', value);
                   setFormData({ ...formData, supplier: value });
                 } else if (value === null) {
+                  console.log('❌ Fournisseur désélectionné');
                   setFormData({ ...formData, supplier: null });
+                } else {
+                  console.warn('⚠️ Type de valeur inattendu:', typeof value, value);
                 }
               }}
               placeholder="Sélectionner un fournisseur"
@@ -240,7 +253,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="any"
                         value={item.quantity}
                         onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -255,7 +268,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="any"
                         value={item.unitPrice}
                         onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -271,7 +284,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({
                         type="number"
                         min="0"
                         max="100"
-                        step="0.01"
+                        step="any"
                         value={item.taxRate}
                         onChange={(e) => updateItem(index, 'taxRate', parseFloat(e.target.value) || 0)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

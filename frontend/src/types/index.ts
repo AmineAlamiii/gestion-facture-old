@@ -69,6 +69,7 @@ export interface SaleInvoice {
   taxAmount: number;
   total: number;
   status: 'draft' | 'sent' | 'paid' | 'overdue';
+  paymentMethod?: string;
   notes?: string;
   basedOnPurchase?: string; // Reference to purchase invoice ID
 }
